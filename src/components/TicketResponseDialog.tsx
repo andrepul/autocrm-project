@@ -10,6 +10,13 @@ import { useQueryClient } from "@tanstack/react-query";
 type Ticket = Tables<"tickets">;
 type TicketResponse = Tables<"ticket_responses">;
 
+interface ResponseWithProfile extends TicketResponse {
+  profiles: {
+    full_name: string | null;
+    email: string | null;
+  } | null;
+}
+
 interface TicketResponseDialogProps {
   ticket: Ticket;
   open: boolean;
@@ -17,7 +24,7 @@ interface TicketResponseDialogProps {
 }
 
 export const TicketResponseDialog = ({ ticket, open, onOpenChange }: TicketResponseDialogProps) => {
-  const [responses, setResponses] = useState<TicketResponse[]>([]);
+  const [responses, setResponses] = useState<ResponseWithProfile[]>([]);
   const [newResponse, setNewResponse] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -33,7 +40,10 @@ export const TicketResponseDialog = ({ ticket, open, onOpenChange }: TicketRespo
       .from("ticket_responses")
       .select(`
         *,
-        responder:profiles(full_name, email)
+        profiles (
+          full_name,
+          email
+        )
       `)
       .eq("ticket_id", ticket.id)
       .order("created_at", { ascending: true });
@@ -92,7 +102,7 @@ export const TicketResponseDialog = ({ ticket, open, onOpenChange }: TicketRespo
               <div key={response.id} className="p-3 bg-gray-50 rounded-lg">
                 <div className="flex justify-between items-start mb-2">
                   <span className="text-sm font-medium">
-                    {response.responder?.full_name || response.responder?.email}
+                    {response.profiles?.full_name || response.profiles?.email || 'Unknown User'}
                   </span>
                   <span className="text-xs text-gray-500">
                     {new Date(response.created_at).toLocaleString()}

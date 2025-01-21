@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
 type Ticket = Tables<"tickets">;
+type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 
 interface TicketEditDialogProps {
   ticket: Ticket;
@@ -20,7 +21,7 @@ interface TicketEditDialogProps {
 export const TicketEditDialog = ({ ticket, open, onOpenChange }: TicketEditDialogProps) => {
   const [title, setTitle] = useState(ticket.title);
   const [description, setDescription] = useState(ticket.description);
-  const [status, setStatus] = useState(ticket.status || "open");
+  const [status, setStatus] = useState<TicketStatus>(ticket.status as TicketStatus || 'open');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -83,7 +84,7 @@ export const TicketEditDialog = ({ ticket, open, onOpenChange }: TicketEditDialo
           </div>
           <div className="space-y-2">
             <label htmlFor="status" className="text-sm font-medium">Status</label>
-            <Select value={status} onValueChange={setStatus}>
+            <Select value={status} onValueChange={(value: TicketStatus) => setStatus(value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
