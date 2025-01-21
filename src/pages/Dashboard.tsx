@@ -7,7 +7,9 @@ import { Tables } from "@/integrations/supabase/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle } from "lucide-react";
+import { CreateTicketDialog } from "@/components/CreateTicketDialog";
+import { useQuery } from "@tanstack/react-query";
+import { Edit2, MessageSquare, Trash2 } from "lucide-react";
 
 type Profile = Tables<"profiles">;
 type Ticket = Tables<"tickets">;
@@ -15,9 +17,20 @@ type Ticket = Tables<"tickets">;
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+
+  const { data: tickets, isLoading } = useQuery({
+    queryKey: ["tickets"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tickets")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data as Ticket[];
+    },
+  });
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -45,25 +58,6 @@ const Dashboard = () => {
       }
 
       setProfile(profileData);
-
-      // Fetch tickets based on user role
-      const { data: ticketsData, error: ticketsError } = await supabase
-        .from("tickets")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (ticketsError) {
-        console.error("Error fetching tickets:", ticketsError);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Could not fetch tickets",
-        });
-        return;
-      }
-
-      setTickets(ticketsData);
-      setLoading(false);
     };
 
     fetchUserProfile();
@@ -86,7 +80,7 @@ const Dashboard = () => {
     }
   };
 
-  const getStatusBadgeColor = (status: string) => {
+  const getStatusBadgeColor = (status: string | null) => {
     switch (status) {
       case "open":
         return "bg-blue-500";
@@ -101,7 +95,30 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) {
+  const handleDeleteTicket = async (ticketId: string) => {
+    try {
+      const { error } = await supabase
+        .from("tickets")
+        .delete()
+        .eq("id", ticketId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Ticket deleted successfully",
+      });
+    } catch (error) {
+      console.error("Error deleting ticket:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete ticket",
+      });
+    }
+  };
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -130,10 +147,7 @@ const Dashboard = () => {
         <div className="px-4 py-6 sm:px-0">
           <div className="mb-6 flex justify-between items-center">
             <h2 className="text-xl font-semibold">Ticket Management</h2>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              New Ticket
-            </Button>
+            <CreateTicketDialog />
           </div>
 
           <Tabs defaultValue="all" className="w-full">
@@ -146,7 +160,47 @@ const Dashboard = () => {
 
             <TabsContent value="all" className="mt-6">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {tickets.map((ticket) => (
+                {tickets?.map((ticket) => (
+                  <Card key={ticket.id}>
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-lg">{ticket.title}</CardTitle>
+                        <Badge className={getStatusBadgeColor(ticket.status)}>
+                          {ticket.status}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-500 line-clamp-2">{ticket.description}</p>
+                      <div className="mt-4 flex justify-between items-center">
+                        <span className="text-xs text-gray-400">
+                          {new Date(ticket.created_at).toLocaleDateString()}
+                        </span>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm">
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDeleteTicket(ticket.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="open">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {tickets?.filter(t => t.status === "open").map((ticket) => (
                   <Card key={ticket.id}>
                     <CardHeader>
                       <div className="flex justify-between items-start">
@@ -169,16 +223,55 @@ const Dashboard = () => {
                 ))}
               </div>
             </TabsContent>
-
-            {/* Other tab contents will filter the tickets based on status */}
-            <TabsContent value="open">
-              {/* Similar grid with filtered tickets */}
-            </TabsContent>
             <TabsContent value="in_progress">
-              {/* Similar grid with filtered tickets */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {tickets?.filter(t => t.status === "in_progress").map((ticket) => (
+                  <Card key={ticket.id}>
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-lg">{ticket.title}</CardTitle>
+                        <Badge className={getStatusBadgeColor(ticket.status || "")}>
+                          {ticket.status}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-500 line-clamp-2">{ticket.description}</p>
+                      <div className="mt-4 flex justify-between items-center">
+                        <span className="text-xs text-gray-400">
+                          {new Date(ticket.created_at).toLocaleDateString()}
+                        </span>
+                        <Button variant="outline" size="sm">View Details</Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </TabsContent>
             <TabsContent value="resolved">
-              {/* Similar grid with filtered tickets */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {tickets?.filter(t => t.status === "resolved").map((ticket) => (
+                  <Card key={ticket.id}>
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-lg">{ticket.title}</CardTitle>
+                        <Badge className={getStatusBadgeColor(ticket.status || "")}>
+                          {ticket.status}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-500 line-clamp-2">{ticket.description}</p>
+                      <div className="mt-4 flex justify-between items-center">
+                        <span className="text-xs text-gray-400">
+                          {new Date(ticket.created_at).toLocaleDateString()}
+                        </span>
+                        <Button variant="outline" size="sm">View Details</Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </TabsContent>
           </Tabs>
         </div>
