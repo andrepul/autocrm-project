@@ -23,6 +23,7 @@ import * as z from "zod";
 import { PlusCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
 const ticketSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -32,6 +33,7 @@ const ticketSchema = z.object({
 export function CreateTicketDialog() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
 
   const form = useForm<z.infer<typeof ticketSchema>>({
     resolver: zodResolver(ticketSchema),
@@ -58,6 +60,7 @@ export function CreateTicketDialog() {
 
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       form.reset();
+      setOpen(false); // Close the dialog after successful creation
     } catch (error) {
       console.error("Error creating ticket:", error);
       toast({
@@ -69,7 +72,7 @@ export function CreateTicketDialog() {
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
