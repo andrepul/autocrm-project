@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { CreateTicketDialog } from "@/components/CreateTicketDialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Edit2, MessageSquare, Trash2 } from "lucide-react";
+import { UserRoleManagement } from "@/components/UserRoleManagement";
 
 type Profile = Tables<"profiles">;
 type Ticket = Tables<"tickets">;
@@ -191,15 +192,15 @@ const Dashboard = () => {
             <CreateTicketDialog />
           </div>
 
-          <Tabs defaultValue="all" className="w-full">
+          <Tabs defaultValue="tickets" className="w-full">
             <TabsList>
-              <TabsTrigger value="all">All Tickets</TabsTrigger>
-              <TabsTrigger value="open">Open</TabsTrigger>
-              <TabsTrigger value="in_progress">In Progress</TabsTrigger>
-              <TabsTrigger value="resolved">Resolved</TabsTrigger>
+              <TabsTrigger value="tickets">Tickets</TabsTrigger>
+              {profile?.role === "admin" && (
+                <TabsTrigger value="users">User Management</TabsTrigger>
+              )}
             </TabsList>
 
-            <TabsContent value="all" className="mt-6">
+            <TabsContent value="tickets">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {tickets?.map((ticket) => (
                   <Card key={ticket.id}>
@@ -239,81 +240,11 @@ const Dashboard = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="open">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {tickets?.filter(t => t.status === "open").map((ticket) => (
-                  <Card key={ticket.id}>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg">{ticket.title}</CardTitle>
-                        <Badge className={getStatusBadgeColor(ticket.status || "")}>
-                          {ticket.status}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-500 line-clamp-2">{ticket.description}</p>
-                      <div className="mt-4 flex justify-between items-center">
-                        <span className="text-xs text-gray-400">
-                          {new Date(ticket.created_at).toLocaleDateString()}
-                        </span>
-                        <Button variant="outline" size="sm">View Details</Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-            <TabsContent value="in_progress">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {tickets?.filter(t => t.status === "in_progress").map((ticket) => (
-                  <Card key={ticket.id}>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg">{ticket.title}</CardTitle>
-                        <Badge className={getStatusBadgeColor(ticket.status || "")}>
-                          {ticket.status}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-500 line-clamp-2">{ticket.description}</p>
-                      <div className="mt-4 flex justify-between items-center">
-                        <span className="text-xs text-gray-400">
-                          {new Date(ticket.created_at).toLocaleDateString()}
-                        </span>
-                        <Button variant="outline" size="sm">View Details</Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-            <TabsContent value="resolved">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {tickets?.filter(t => t.status === "resolved").map((ticket) => (
-                  <Card key={ticket.id}>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg">{ticket.title}</CardTitle>
-                        <Badge className={getStatusBadgeColor(ticket.status || "")}>
-                          {ticket.status}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-500 line-clamp-2">{ticket.description}</p>
-                      <div className="mt-4 flex justify-between items-center">
-                        <span className="text-xs text-gray-400">
-                          {new Date(ticket.created_at).toLocaleDateString()}
-                        </span>
-                        <Button variant="outline" size="sm">View Details</Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
+            {profile?.role === "admin" && (
+              <TabsContent value="users">
+                <UserRoleManagement />
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </main>
