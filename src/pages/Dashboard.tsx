@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { CreateTicketDialog } from "@/components/CreateTicketDialog";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Edit2, MessageSquare, Trash2 } from "lucide-react";
 
 type Profile = Tables<"profiles">;
@@ -18,16 +18,45 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const queryClient = useQueryClient();
+
+  // Add real-time subscription for tickets
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:tickets')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tickets'
+        },
+        () => {
+          // Invalidate and refetch tickets when there's any change
+          queryClient.invalidateQueries({ queryKey: ['tickets'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const { data: tickets, isLoading } = useQuery({
     queryKey: ["tickets"],
     queryFn: async () => {
+      console.log("Fetching tickets...");
       const { data, error } = await supabase
         .from("tickets")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching tickets:", error);
+        throw error;
+      }
+      console.log("Fetched tickets:", data);
       return data as Ticket[];
     },
   });
@@ -103,6 +132,9 @@ const Dashboard = () => {
         .eq("id", ticketId);
 
       if (error) throw error;
+
+      // Invalidate and refetch tickets after deletion
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
 
       toast({
         title: "Success",
