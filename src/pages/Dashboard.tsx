@@ -4,13 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Tables } from "@/integrations/supabase/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { CreateTicketDialog } from "@/components/CreateTicketDialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Edit2, MessageSquare, Trash2 } from "lucide-react";
 import { UserRoleManagement } from "@/components/UserRoleManagement";
+import { TicketCard } from "@/components/TicketCard";
 
 type Profile = Tables<"profiles">;
 type Ticket = Tables<"tickets">;
@@ -62,7 +61,7 @@ const Dashboard = () => {
     }
   }, [profileData, profileError, navigate, toast]);
 
-  // Add real-time subscription for tickets
+  // Add real-time subscription for tickets and responses
   useEffect(() => {
     const channel = supabase
       .channel('public:tickets')
@@ -72,6 +71,17 @@ const Dashboard = () => {
           event: '*',
           schema: 'public',
           table: 'tickets'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['tickets'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'ticket_responses'
         },
         () => {
           queryClient.invalidateQueries({ queryKey: ['tickets'] });
@@ -100,7 +110,7 @@ const Dashboard = () => {
       console.log("Fetched tickets:", data);
       return data as Ticket[];
     },
-    enabled: !!profile, // Only fetch tickets when profile is loaded
+    enabled: !!profile,
   });
 
   const handleSignOut = async () => {
@@ -117,46 +127,6 @@ const Dashboard = () => {
         description: "Successfully signed out of your account.",
       });
       navigate("/");
-    }
-  };
-
-  const getStatusBadgeColor = (status: string | null) => {
-    switch (status) {
-      case "open":
-        return "bg-blue-500";
-      case "in_progress":
-        return "bg-yellow-500";
-      case "resolved":
-        return "bg-green-500";
-      case "closed":
-        return "bg-gray-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
-  const handleDeleteTicket = async (ticketId: string) => {
-    try {
-      const { error } = await supabase
-        .from("tickets")
-        .delete()
-        .eq("id", ticketId);
-
-      if (error) throw error;
-
-      queryClient.invalidateQueries({ queryKey: ['tickets'] });
-
-      toast({
-        title: "Success",
-        description: "Ticket deleted successfully",
-      });
-    } catch (error) {
-      console.error("Error deleting ticket:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete ticket",
-      });
     }
   };
 
@@ -203,39 +173,7 @@ const Dashboard = () => {
             <TabsContent value="tickets">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {tickets?.map((ticket) => (
-                  <Card key={ticket.id}>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg">{ticket.title}</CardTitle>
-                        <Badge className={getStatusBadgeColor(ticket.status)}>
-                          {ticket.status}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-500 line-clamp-2">{ticket.description}</p>
-                      <div className="mt-4 flex justify-between items-center">
-                        <span className="text-xs text-gray-400">
-                          {new Date(ticket.created_at).toLocaleDateString()}
-                        </span>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            <MessageSquare className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleDeleteTicket(ticket.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <TicketCard key={ticket.id} ticket={ticket} />
                 ))}
               </div>
             </TabsContent>
