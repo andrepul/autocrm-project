@@ -20,6 +20,47 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const queryClient = useQueryClient();
 
+  // Fetch user profile
+  const { data: profileData, error: profileError } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      console.log("Fetching profile...");
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("No authenticated user");
+      }
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+        throw error;
+      }
+
+      console.log("Fetched profile:", data);
+      return data as Profile;
+    },
+  });
+
+  useEffect(() => {
+    if (profileData) {
+      setProfile(profileData);
+    }
+    if (profileError) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not fetch user profile",
+      });
+      navigate("/");
+    }
+  }, [profileData, profileError, navigate, toast]);
+
   // Add real-time subscription for tickets
   useEffect(() => {
     const channel = supabase
@@ -32,7 +73,6 @@ const Dashboard = () => {
           table: 'tickets'
         },
         () => {
-          // Invalidate and refetch tickets when there's any change
           queryClient.invalidateQueries({ queryKey: ['tickets'] });
         }
       )
@@ -59,38 +99,8 @@ const Dashboard = () => {
       console.log("Fetched tickets:", data);
       return data as Ticket[];
     },
+    enabled: !!profile, // Only fetch tickets when profile is loaded
   });
-
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        navigate("/");
-        return;
-      }
-
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (profileError) {
-        console.error("Error fetching profile:", profileError);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Could not fetch user profile",
-        });
-        return;
-      }
-
-      setProfile(profileData);
-    };
-
-    fetchUserProfile();
-  }, [navigate, toast]);
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -133,7 +143,6 @@ const Dashboard = () => {
 
       if (error) throw error;
 
-      // Invalidate and refetch tickets after deletion
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
 
       toast({
@@ -150,7 +159,7 @@ const Dashboard = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !profile) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
