@@ -369,18 +369,6 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
         )}>
           <Filter className="h-4 w-4" />
           <span className="font-medium">Filters:</span>
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-auto"
-            onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-          >
-            {viewMode === 'grid' ? (
-              <LayoutList className="h-4 w-4" />
-            ) : (
-              <LayoutGrid className="h-4 w-4" />
-            )}
-          </Button>
         </div>
         
         <div className={cn(
@@ -441,6 +429,32 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
               </SelectContent>
             </Select>
           )}
+        </div>
+
+        <div className="flex items-center border rounded-md overflow-hidden ml-auto">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "h-8 px-3 rounded-none",
+              viewMode === 'grid' ? "bg-accent text-accent-foreground" : "hover:bg-transparent hover:text-accent-foreground"
+            )}
+            onClick={() => setViewMode('grid')}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+          <div className="w-[1px] h-4 bg-border" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "h-8 px-3 rounded-none",
+              viewMode === 'list' ? "bg-accent text-accent-foreground" : "hover:bg-transparent hover:text-accent-foreground"
+            )}
+            onClick={() => setViewMode('list')}
+          >
+            <LayoutList className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
