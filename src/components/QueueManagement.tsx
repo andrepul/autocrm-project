@@ -17,10 +17,17 @@ import {
   Plus,
   ArrowDown,
   List,
+  Grid,
+  LayoutGrid,
+  LayoutList,
+  MessageSquare,
+  Edit2,
 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { TicketCard } from "./TicketCard";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 type TicketStatus = Database["public"]["Enums"]["ticket_status"];
 type Ticket = Tables<"tickets"> & {
@@ -36,11 +43,15 @@ interface QueueManagementProps {
 
 export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [selectedTickets, setSelectedTickets] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<TicketStatus | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showResponseDialog, setShowResponseDialog] = useState(false);
 
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["tickets", statusFilter, priorityFilter, assigneeFilter, tagFilter],
@@ -219,6 +230,47 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
     }
   };
 
+  const getStatusBadgeColor = (status: string | null) => {
+    switch (status) {
+      case "open":
+        return "bg-blue-500";
+      case "in_progress":
+        return "bg-yellow-500";
+      case "resolved":
+        return "bg-green-500";
+      case "closed":
+        return "bg-gray-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  const getPriorityBadgeColor = (priority: number | null) => {
+    switch (priority) {
+      case 3:
+        return "bg-red-500";
+      case 2:
+        return "bg-orange-500";
+      case 1:
+        return "bg-green-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  const getPriorityLabel = (priority: number | null) => {
+    switch (priority) {
+      case 3:
+        return "High";
+      case 2:
+        return "Medium";
+      case 1:
+        return "Low";
+      default:
+        return "Unknown";
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -227,68 +279,149 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
     );
   }
 
+  const renderListView = () => (
+    <div className="space-y-2">
+      {tickets.map((ticket) => (
+        <div
+          key={ticket.id}
+          className="relative bg-white p-4 rounded-lg shadow flex items-center gap-4"
+        >
+          <Checkbox
+            checked={selectedTickets.has(ticket.id)}
+            onCheckedChange={(checked) => 
+              handleSelectTicket(ticket.id, checked as boolean)
+            }
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-medium text-sm truncate">{ticket.title}</h3>
+              <Badge className={getStatusBadgeColor(ticket.status)}>
+                {ticket.status}
+              </Badge>
+              <Badge className={getPriorityBadgeColor(ticket.priority)}>
+                {getPriorityLabel(ticket.priority)}
+              </Badge>
+            </div>
+            <p className="text-xs text-gray-500 line-clamp-1">{ticket.description}</p>
+            {ticket.ticket_tags && ticket.ticket_tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {ticket.ticket_tags.map(({ tags }) => (
+                  <Badge
+                    key={tags.id}
+                    variant="secondary"
+                    className="px-1 py-0 text-xs"
+                  >
+                    {tags.name}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowResponseDialog(true)}
+            >
+              <MessageSquare className="h-4 w-4" />
+            </Button>
+            {isWorkerOrAdmin && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowEditDialog(true)}
+              >
+                <Edit2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-4 items-center bg-white p-4 rounded-lg shadow">
-        <div className="flex items-center gap-2">
+        <div className={cn(
+          "flex items-center gap-2",
+          isMobile ? "w-full" : "flex-none"
+        )}>
           <Filter className="h-4 w-4" />
           <span className="font-medium">Filters:</span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+          >
+            {viewMode === 'grid' ? (
+              <LayoutList className="h-4 w-4" />
+            ) : (
+              <LayoutGrid className="h-4 w-4" />
+            )}
+          </Button>
         </div>
         
-        <Select value={statusFilter ?? "all"} onValueChange={(value) => setStatusFilter(value === "all" ? null : value as TicketStatus)}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="open">Open</SelectItem>
-            <SelectItem value="in_progress">In Progress</SelectItem>
-            <SelectItem value="resolved">Resolved</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={priorityFilter ?? "all"} onValueChange={(value) => setPriorityFilter(value === "all" ? null : value)}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Priority" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Priorities</SelectItem>
-            <SelectItem value="1">Low</SelectItem>
-            <SelectItem value="2">Medium</SelectItem>
-            <SelectItem value="3">High</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={tagFilter ?? "all"} onValueChange={(value) => setTagFilter(value === "all" ? null : value)}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Tag" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Tags</SelectItem>
-            {tags.map((tag) => (
-              <SelectItem key={tag.id} value={tag.id}>
-                {tag.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {isAdmin && (
-          <Select value={assigneeFilter ?? "all"} onValueChange={(value) => setAssigneeFilter(value === "all" ? null : value)}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Assignee" />
+        <div className={cn(
+          "flex flex-wrap gap-4",
+          isMobile ? "w-full" : "flex-1"
+        )}>
+          <Select value={statusFilter ?? "all"} onValueChange={(value) => setStatusFilter(value === "all" ? null : value as TicketStatus)}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Assignees</SelectItem>
-              {workers.map((worker) => (
-                <SelectItem key={worker.id} value={worker.id}>
-                  {worker.full_name || worker.email}
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="open">Open</SelectItem>
+              <SelectItem value="in_progress">In Progress</SelectItem>
+              <SelectItem value="resolved">Resolved</SelectItem>
+              <SelectItem value="closed">Closed</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={priorityFilter ?? "all"} onValueChange={(value) => setPriorityFilter(value === "all" ? null : value)}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priorities</SelectItem>
+              <SelectItem value="1">Low</SelectItem>
+              <SelectItem value="2">Medium</SelectItem>
+              <SelectItem value="3">High</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={tagFilter ?? "all"} onValueChange={(value) => setTagFilter(value === "all" ? null : value)}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Tag" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Tags</SelectItem>
+              {tags.map((tag) => (
+                <SelectItem key={tag.id} value={tag.id}>
+                  {tag.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        )}
+
+          {isAdmin && (
+            <Select value={assigneeFilter ?? "all"} onValueChange={(value) => setAssigneeFilter(value === "all" ? null : value)}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Assignee" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Assignees</SelectItem>
+                {workers.map((worker) => (
+                  <SelectItem key={worker.id} value={worker.id}>
+                    {worker.full_name || worker.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
       </div>
 
       {tickets.length > 0 && (
@@ -347,21 +480,25 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
             )}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {tickets.map((ticket) => (
-              <div key={ticket.id} className="relative">
-                <div className="absolute top-2 left-2 z-10">
-                  <Checkbox
-                    checked={selectedTickets.has(ticket.id)}
-                    onCheckedChange={(checked) => 
-                      handleSelectTicket(ticket.id, checked as boolean)
-                    }
-                  />
+          {viewMode === 'grid' ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {tickets.map((ticket) => (
+                <div key={ticket.id} className="relative">
+                  <div className="absolute top-2 left-2 z-10">
+                    <Checkbox
+                      checked={selectedTickets.has(ticket.id)}
+                      onCheckedChange={(checked) => 
+                        handleSelectTicket(ticket.id, checked as boolean)
+                      }
+                    />
+                  </div>
+                  <TicketCard ticket={ticket} />
                 </div>
-                <TicketCard ticket={ticket} />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            renderListView()
+          )}
         </div>
       )}
 
