@@ -24,10 +24,12 @@ import { PlusCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ticketSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
+  priority: z.string().transform(val => parseInt(val)),
 });
 
 export function CreateTicketDialog() {
@@ -40,6 +42,7 @@ export function CreateTicketDialog() {
     defaultValues: {
       title: "",
       description: "",
+      priority: "1",
     },
   });
 
@@ -48,6 +51,7 @@ export function CreateTicketDialog() {
       const { error } = await supabase.from("tickets").insert({
         title: values.title,
         description: values.description,
+        priority: values.priority,
         customer_id: (await supabase.auth.getUser()).data.user?.id,
       });
 
@@ -60,7 +64,7 @@ export function CreateTicketDialog() {
 
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       form.reset();
-      setOpen(false); // Close the dialog after successful creation
+      setOpen(false);
     } catch (error) {
       console.error("Error creating ticket:", error);
       toast({
@@ -111,6 +115,28 @@ export function CreateTicketDialog() {
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="priority"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Priority</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select priority" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="1">Low</SelectItem>
+                      <SelectItem value="2">Medium</SelectItem>
+                      <SelectItem value="3">High</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

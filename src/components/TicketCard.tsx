@@ -32,15 +32,48 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
     }
   };
 
+  const getPriorityBadgeColor = (priority: number | null) => {
+    switch (priority) {
+      case 3:
+        return "bg-red-500";
+      case 2:
+        return "bg-orange-500";
+      case 1:
+        return "bg-green-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  const getPriorityLabel = (priority: number | null) => {
+    switch (priority) {
+      case 3:
+        return "High";
+      case 2:
+        return "Medium";
+      case 1:
+        return "Low";
+      default:
+        return "Unknown";
+    }
+  };
+
   return (
     <>
       <Card>
         <CardHeader>
           <div className="flex justify-between items-start">
-            <CardTitle className="text-lg">{ticket.title}</CardTitle>
-            <Badge className={getStatusBadgeColor(ticket.status)}>
-              {ticket.status}
-            </Badge>
+            <div>
+              <CardTitle className="text-lg">{ticket.title}</CardTitle>
+              <div className="flex gap-2 mt-2">
+                <Badge className={getStatusBadgeColor(ticket.status)}>
+                  {ticket.status}
+                </Badge>
+                <Badge className={getPriorityBadgeColor(ticket.priority)}>
+                  {getPriorityLabel(ticket.priority)}
+                </Badge>
+              </div>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

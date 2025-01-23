@@ -22,6 +22,7 @@ export const TicketEditDialog = ({ ticket, open, onOpenChange }: TicketEditDialo
   const [title, setTitle] = useState(ticket.title);
   const [description, setDescription] = useState(ticket.description);
   const [status, setStatus] = useState<TicketStatus>(ticket.status as TicketStatus || 'open');
+  const [priority, setPriority] = useState<string>(ticket.priority?.toString() || "1");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -34,6 +35,7 @@ export const TicketEditDialog = ({ ticket, open, onOpenChange }: TicketEditDialo
         title,
         description,
         status,
+        priority: parseInt(priority),
         updated_at: new Date().toISOString(),
       })
       .eq("id", ticket.id);
@@ -93,6 +95,19 @@ export const TicketEditDialog = ({ ticket, open, onOpenChange }: TicketEditDialo
                 <SelectItem value="in_progress">In Progress</SelectItem>
                 <SelectItem value="resolved">Resolved</SelectItem>
                 <SelectItem value="closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="priority" className="text-sm font-medium">Priority</label>
+            <Select value={priority} onValueChange={setPriority}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Low</SelectItem>
+                <SelectItem value="2">Medium</SelectItem>
+                <SelectItem value="3">High</SelectItem>
               </SelectContent>
             </Select>
           </div>
