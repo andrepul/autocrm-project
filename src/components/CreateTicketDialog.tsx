@@ -29,7 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const ticketSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
-  priority: z.string().transform(val => parseInt(val)),
+  priority: z.number().min(1).max(3),
 });
 
 export function CreateTicketDialog() {
@@ -42,7 +42,7 @@ export function CreateTicketDialog() {
     defaultValues: {
       title: "",
       description: "",
-      priority: "1",
+      priority: 1,
     },
   });
 
@@ -125,7 +125,10 @@ export function CreateTicketDialog() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Priority</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select 
+                    onValueChange={(value) => field.onChange(Number(value))} 
+                    value={field.value.toString()}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select priority" />
