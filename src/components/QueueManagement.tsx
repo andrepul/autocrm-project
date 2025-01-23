@@ -46,6 +46,9 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
     queryKey: ["tickets", statusFilter, priorityFilter, assigneeFilter, tagFilter],
     queryFn: async () => {
       console.log("Fetching filtered tickets...");
+      console.log("Status filter:", statusFilter);
+      console.log("Priority filter:", priorityFilter);
+      console.log("Assignee filter:", assigneeFilter);
       console.log("Tag filter:", tagFilter);
       
       let query = supabase
@@ -75,8 +78,19 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
         query = query.eq("assigned_to", assigneeFilter);
       }
       if (tagFilter) {
-        // Filter tickets that have the selected tag
-        query = query.contains('ticket_tags', [{ tags: { id: tagFilter } }]);
+        // First get all ticket IDs that have this tag
+        const { data: ticketIds } = await supabase
+          .from('ticket_tags')
+          .select('ticket_id')
+          .eq('tag_id', tagFilter);
+        
+        if (ticketIds && ticketIds.length > 0) {
+          // Then filter tickets by these IDs
+          query = query.in('id', ticketIds.map(t => t.ticket_id));
+        } else {
+          // If no tickets have this tag, return empty array
+          return [];
+        }
       }
 
       const { data, error } = await query;
