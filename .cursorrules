@@ -55,20 +55,9 @@ You will be penalized if you:
 
 # Project specific rules
 
-We are developing a CRM app, basically a version of Zendesk. For this week, we should have the following features:
-
-1. Standard Identifiers & Timestamps: Basic fields like ticket ID, creation date, and status updates.
-2. Flexible Metadata:
-   1. Dynamic Status Tracking: Reflects team workflows.
-   2. Priority Levels: Manage response times effectively.
-   3. Custom Fields: Tailor tickets to specific business needs.
-   4. Tags: Enable categorization and automation.
-   5. Internal Notes: Facilitate team collaboration.
-   Full Conversation History: Includes interactions between customers and team members.
+We are developing a CRM app, basically a version of Zendesk. For this week, we should have some basic features typical of a CRM app.
 
 Once these are in place, our goal will be to incorporate AI to take care of tasks that can be automated. For now, let's just focus on the basic features.
-
-Important: First goalpost is to have a basic ticket management system.
 
 Additional context for this project can be found in the project folder, in the folder called "cursor_context".
 
