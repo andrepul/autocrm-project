@@ -13,7 +13,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from 'date-fns';
 
-type Ticket = Tables<"tickets">;
+type Ticket = Tables<"tickets"> & {
+  ticket_tags?: {
+    tags: Tables<"tags">;
+  }[];
+};
 
 interface TicketCardProps {
   ticket: Ticket;

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Tables } from "@/integrations/supabase/types";
+import { Tables, Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -22,7 +22,13 @@ import { Badge } from "./ui/badge";
 import { TicketCard } from "./TicketCard";
 import { useToast } from "@/hooks/use-toast";
 
-type Ticket = Tables<"tickets">;
+type TicketStatus = Database["public"]["Enums"]["ticket_status"];
+type Ticket = Tables<"tickets"> & {
+  ticket_tags?: {
+    tags: Tables<"tags">;
+  }[];
+  profiles?: Tables<"profiles">;
+};
 
 interface QueueManagementProps {
   isAdmin: boolean;
@@ -31,7 +37,7 @@ interface QueueManagementProps {
 export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
   const { toast } = useToast();
   const [selectedTickets, setSelectedTickets] = useState<Set<string>>(new Set());
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<TicketStatus | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
@@ -74,7 +80,7 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      return data as Ticket[];
     },
   });
 
@@ -208,7 +214,7 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
           <span className="font-medium">Filters:</span>
         </div>
         
-        <Select value={statusFilter ?? ""} onValueChange={setStatusFilter}>
+        <Select value={statusFilter ?? ""} onValueChange={(value) => setStatusFilter(value as TicketStatus | null)}>
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
