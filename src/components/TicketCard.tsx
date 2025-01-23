@@ -2,10 +2,14 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit2, MessageSquare } from "lucide-react";
+import { Edit2, MessageSquare, StickyNote, Tag } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { TicketEditDialog } from "./TicketEditDialog";
 import { TicketResponseDialog } from "./TicketResponseDialog";
+import { TicketInternalNotesDialog } from "./TicketInternalNotesDialog";
+import { TicketTagsDialog } from "./TicketTagsDialog";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 type Ticket = Tables<"tickets">;
 
@@ -16,6 +20,29 @@ interface TicketCardProps {
 export const TicketCard = ({ ticket }: TicketCardProps) => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showResponseDialog, setShowResponseDialog] = useState(false);
+  const [showInternalNotesDialog, setShowInternalNotesDialog] = useState(false);
+  const [showTagsDialog, setShowTagsDialog] = useState(false);
+
+  // Fetch user profile to determine role
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const isWorkerOrAdmin = profile?.role === "worker" || profile?.role === "admin";
+  const isAdmin = profile?.role === "admin";
 
   const getStatusBadgeColor = (status: string | null) => {
     switch (status) {
@@ -90,15 +117,39 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
               >
                 <MessageSquare className="h-4 w-4" />
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowEditDialog(true)}
-              >
-                <Edit2 className="h-4 w-4" />
-              </Button>
+              {isWorkerOrAdmin && (
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowInternalNotesDialog(true)}
+                  >
+                    <StickyNote className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowEditDialog(true)}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
             </div>
           </div>
+          {isWorkerOrAdmin && (
+            <div className="mt-2 flex justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-xs"
+                onClick={() => setShowTagsDialog(true)}
+              >
+                <Tag className="h-3 w-3 mr-1" />
+                Manage Tags
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -113,6 +164,23 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
         open={showResponseDialog}
         onOpenChange={setShowResponseDialog}
       />
+
+      {isWorkerOrAdmin && (
+        <>
+          <TicketInternalNotesDialog
+            ticket={ticket}
+            open={showInternalNotesDialog}
+            onOpenChange={setShowInternalNotesDialog}
+          />
+          
+          <TicketTagsDialog
+            ticket={ticket}
+            open={showTagsDialog}
+            onOpenChange={setShowTagsDialog}
+            isAdmin={isAdmin}
+          />
+        </>
+      )}
     </>
   );
 };
