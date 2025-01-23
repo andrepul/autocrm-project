@@ -52,7 +52,7 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
         .from("tickets")
         .select(`
           *,
-          ticket_tags (
+          ticket_tags!inner (
             tags (
               id,
               name
@@ -75,8 +75,8 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
         query = query.eq("assigned_to", assigneeFilter);
       }
       if (tagFilter) {
-        // Join with ticket_tags to filter by tag_id
-        query = query.eq('ticket_tags.tag_id', tagFilter);
+        // Filter by tag_id in the ticket_tags junction table
+        query = query.eq('ticket_tags.tags.id', tagFilter);
       }
 
       const { data, error } = await query;
