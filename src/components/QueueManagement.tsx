@@ -53,6 +53,26 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showResponseDialog, setShowResponseDialog] = useState(false);
 
+  // Fetch user profile to determine role
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const isWorkerOrAdmin = profile?.role === "worker" || profile?.role === "admin";
+
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["tickets", statusFilter, priorityFilter, assigneeFilter, tagFilter],
     queryFn: async () => {
