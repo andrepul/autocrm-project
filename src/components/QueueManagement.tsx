@@ -110,21 +110,42 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
       if (priorityFilter) {
         query = query.eq("priority", parseInt(priorityFilter));
       }
-      if (assigneeFilter && isAdmin) {
+      
+      // Handle unassigned filter
+      if (assigneeFilter === 'unassigned') {
+        query = query.is('assigned_to', null);
+      } else if (assigneeFilter && assigneeFilter !== 'all' && isAdmin) {
         query = query.eq("assigned_to", assigneeFilter);
       }
-      if (tagFilter) {
-        // First get all ticket IDs that have this tag
+
+      // Handle tag filters
+      if (tagFilter === 'untagged') {
+        // Get all ticket IDs that have tags
+        const { data: ticketIds, error: tagError } = await supabase
+          .from('ticket_tags')
+          .select('ticket_id');
+        
+        console.log('Untagged filter - ticket_tags query result:', { ticketIds, tagError });
+        
+        if (ticketIds && ticketIds.length > 0) {
+          // Remove duplicates from the array of ticket IDs
+          const uniqueTicketIds = [...new Set(ticketIds.map(t => t.ticket_id))];
+          // Use .in with 'not' operator instead of .not('id', 'in', ...)
+          query = query.not('id', 'in', `(${uniqueTicketIds.join(',')})`);
+          console.log('Excluding tagged tickets:', uniqueTicketIds);
+        } else {
+          console.log('No tagged tickets found - returning all tickets as they are untagged');
+        }
+      } else if (tagFilter && tagFilter !== 'all') {
+        // Existing tag filtering logic
         const { data: ticketIds } = await supabase
           .from('ticket_tags')
           .select('ticket_id')
           .eq('tag_id', tagFilter);
         
         if (ticketIds && ticketIds.length > 0) {
-          // Then filter tickets by these IDs
           query = query.in('id', ticketIds.map(t => t.ticket_id));
         } else {
-          // If no tickets have this tag, return empty array
           return [];
         }
       }
@@ -411,6 +432,7 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Tags</SelectItem>
+              <SelectItem value="untagged">(Untagged)</SelectItem>
               {tags.map((tag) => (
                 <SelectItem key={tag.id} value={tag.id}>
                   {tag.name}
@@ -426,6 +448,7 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Assignees</SelectItem>
+                <SelectItem value="unassigned">(Unassigned)</SelectItem>
                 {workers.map((worker) => (
                   <SelectItem key={worker.id} value={worker.id}>
                     {worker.full_name || worker.email}
