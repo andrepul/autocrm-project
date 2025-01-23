@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit2, MessageSquare, StickyNote, Tag } from "lucide-react";
+import { Edit2, MessageSquare, StickyNote, Tag, Settings } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { TicketEditDialog } from "./TicketEditDialog";
 import { TicketResponseDialog } from "./TicketResponseDialog";
@@ -127,6 +127,13 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
                     onClick={() => setShowInternalNotesDialog(true)}
                   >
                     <StickyNote className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowCustomFieldsDialog(true)}
+                  >
+                    <Settings className="h-4 w-4" />
                   </Button>
                   <Button 
                     variant="outline" 
