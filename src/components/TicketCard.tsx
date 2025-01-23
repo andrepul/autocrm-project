@@ -7,6 +7,7 @@ import { Tables } from "@/integrations/supabase/types";
 import { TicketEditDialog } from "./TicketEditDialog";
 import { TicketResponseDialog } from "./TicketResponseDialog";
 import { TicketInternalNotesDialog } from "./TicketInternalNotesDialog";
+import { TicketCustomFieldsDialog } from "./TicketCustomFieldsDialog";
 import { TicketTagsDialog } from "./TicketTagsDialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +22,7 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showResponseDialog, setShowResponseDialog] = useState(false);
   const [showInternalNotesDialog, setShowInternalNotesDialog] = useState(false);
+  const [showCustomFieldsDialog, setShowCustomFieldsDialog] = useState(false);
   const [showTagsDialog, setShowTagsDialog] = useState(false);
 
   // Fetch user profile to determine role
@@ -171,6 +173,13 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
             ticket={ticket}
             open={showInternalNotesDialog}
             onOpenChange={setShowInternalNotesDialog}
+          />
+          
+          <TicketCustomFieldsDialog
+            ticket={ticket}
+            open={showCustomFieldsDialog}
+            onOpenChange={setShowCustomFieldsDialog}
+            isAdmin={isAdmin}
           />
           
           <TicketTagsDialog
