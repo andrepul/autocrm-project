@@ -129,7 +129,7 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
     setSelectedTickets(newSelected);
   };
 
-  const handleBulkStatusUpdate = async (newStatus: string) => {
+  const handleBulkStatusUpdate = async (newStatus: TicketStatus) => {
     const { error } = await supabase
       .from("tickets")
       .update({ status: newStatus, updated_at: new Date().toISOString() })
@@ -285,7 +285,7 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
 
             {selectedTickets.size > 0 && (
               <div className="flex gap-2">
-                <Select onValueChange={handleBulkStatusUpdate}>
+                <Select onValueChange={(value: TicketStatus) => handleBulkStatusUpdate(value)}>
                   <SelectTrigger className="w-[150px]">
                     <SelectValue placeholder="Set Status" />
                   </SelectTrigger>
