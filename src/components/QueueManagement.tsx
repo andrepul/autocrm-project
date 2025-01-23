@@ -52,6 +52,8 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showResponseDialog, setShowResponseDialog] = useState(false);
+  const [sortField, setSortField] = useState<'created_at' | 'updated_at' | 'priority' | 'status'>('updated_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // Fetch user profile to determine role
   const { data: profile } = useQuery({
@@ -74,13 +76,15 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
   const isWorkerOrAdmin = profile?.role === "worker" || profile?.role === "admin";
 
   const { data: tickets = [], isLoading } = useQuery({
-    queryKey: ["tickets", statusFilter, priorityFilter, assigneeFilter, tagFilter],
+    queryKey: ["tickets", statusFilter, priorityFilter, assigneeFilter, tagFilter, sortField, sortDirection],
     queryFn: async () => {
       console.log("Fetching filtered tickets...");
       console.log("Status filter:", statusFilter);
       console.log("Priority filter:", priorityFilter);
       console.log("Assignee filter:", assigneeFilter);
       console.log("Tag filter:", tagFilter);
+      console.log("Sort field:", sortField);
+      console.log("Sort direction:", sortDirection);
       
       let query = supabase
         .from("tickets")
@@ -97,7 +101,8 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
             full_name,
             email
           )
-        `);
+        `)
+        .order(sortField, { ascending: sortDirection === 'asc' });
 
       if (statusFilter) {
         query = query.eq("status", statusFilter);
@@ -431,30 +436,55 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
           )}
         </div>
 
-        <div className="flex items-center border rounded-md overflow-hidden ml-auto">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "h-7 px-2 rounded-none",
-              viewMode === 'grid' ? "bg-accent text-accent-foreground" : "hover:bg-transparent hover:text-accent-foreground"
-            )}
-            onClick={() => setViewMode('grid')}
+        <div className="flex items-center gap-2 ml-auto">
+          <Select 
+            value={`${sortField}-${sortDirection}`} 
+            onValueChange={(value) => {
+              const [field, direction] = value.split('-');
+              setSortField(field as 'created_at' | 'updated_at' | 'priority' | 'status');
+              setSortDirection(direction as 'asc' | 'desc');
+            }}
           >
-            <LayoutGrid className="h-3.5 w-3.5" />
-          </Button>
-          <div className="w-[1px] h-3.5 bg-border" />
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "h-7 px-2 rounded-none",
-              viewMode === 'list' ? "bg-accent text-accent-foreground" : "hover:bg-transparent hover:text-accent-foreground"
-            )}
-            onClick={() => setViewMode('list')}
-          >
-            <LayoutList className="h-3.5 w-3.5" />
-          </Button>
+            <SelectTrigger className="h-7 w-[160px] text-xs">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="created_at-desc">Newest First</SelectItem>
+              <SelectItem value="created_at-asc">Oldest First</SelectItem>
+              <SelectItem value="updated_at-desc">Last Updated First</SelectItem>
+              <SelectItem value="updated_at-asc">Last Updated Last</SelectItem>
+              <SelectItem value="priority-desc">Highest Priority First</SelectItem>
+              <SelectItem value="priority-asc">Lowest Priority First</SelectItem>
+              <SelectItem value="status-asc">Status (Open First)</SelectItem>
+              <SelectItem value="status-desc">Status (Closed First)</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="flex items-center border rounded-md overflow-hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-7 px-2 rounded-none",
+                viewMode === 'grid' ? "bg-accent text-accent-foreground" : "hover:bg-transparent hover:text-accent-foreground"
+              )}
+              onClick={() => setViewMode('grid')}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </Button>
+            <div className="w-[1px] h-3.5 bg-border" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-7 px-2 rounded-none",
+                viewMode === 'list' ? "bg-accent text-accent-foreground" : "hover:bg-transparent hover:text-accent-foreground"
+              )}
+              onClick={() => setViewMode('list')}
+            >
+              <LayoutList className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
       </div>
 
