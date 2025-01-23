@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit2, MessageSquare, StickyNote, Tag, Settings } from "lucide-react";
+import { Edit2, MessageSquare, StickyNote, Tag, Settings, Clock, RefreshCw } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { TicketEditDialog } from "./TicketEditDialog";
 import { TicketResponseDialog } from "./TicketResponseDialog";
@@ -11,6 +11,7 @@ import { TicketCustomFieldsDialog } from "./TicketCustomFieldsDialog";
 import { TicketTagsDialog } from "./TicketTagsDialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from 'date-fns';
 
 type Ticket = Tables<"tickets">;
 
@@ -107,6 +108,18 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-gray-500 line-clamp-2">{ticket.description}</p>
+          <div className="mt-2 flex flex-col gap-1 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              Created {formatDistanceToNow(new Date(ticket.created_at))} ago
+            </div>
+            {ticket.updated_at !== ticket.created_at && (
+              <div className="flex items-center gap-1">
+                <RefreshCw className="h-3 w-3" />
+                Updated {formatDistanceToNow(new Date(ticket.updated_at))} ago
+              </div>
+            )}
+          </div>
           <div className="mt-4 flex justify-between items-center">
             <span className="text-xs text-gray-400">
               {new Date(ticket.created_at).toLocaleDateString()}
