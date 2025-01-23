@@ -29,6 +29,7 @@ import { TicketCard } from "./TicketCard";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 type TicketStatus = Database["public"]["Enums"]["ticket_status"];
 type Ticket = Tables<"tickets"> & {
@@ -55,6 +56,8 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
   const [showResponseDialog, setShowResponseDialog] = useState(false);
   const [sortField, setSortField] = useState<'created_at' | 'updated_at' | 'priority' | 'status'>('updated_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  const queryClient = useQueryClient();
 
   // Fetch user profile to determine role
   const { data: profile } = useQuery({
@@ -220,13 +223,24 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
         title: "Error",
         description: "Failed to update tickets status",
       });
-    } else {
-      toast({
-        title: "Success",
-        description: `Updated ${selectedTickets.size} tickets status`,
-      });
-      setSelectedTickets(new Set());
+      return;
     }
+
+    toast({
+      title: "Success",
+      description: `Updated ${selectedTickets.size} tickets status`,
+    });
+
+    // Only clear selection for tickets that no longer match the current filter
+    if (statusFilter && statusFilter !== newStatus) {
+      setSelectedTickets(prev => {
+        const newSelection = new Set(prev);
+        Array.from(prev).forEach(id => newSelection.delete(id));
+        return newSelection;
+      });
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["tickets"] });
   };
 
   const handleBulkPriorityUpdate = async (newPriority: string) => {
@@ -244,13 +258,24 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
         title: "Error",
         description: "Failed to update tickets priority",
       });
-    } else {
-      toast({
-        title: "Success",
-        description: `Updated ${selectedTickets.size} tickets priority`,
-      });
-      setSelectedTickets(new Set());
+      return;
     }
+
+    toast({
+      title: "Success",
+      description: `Updated ${selectedTickets.size} tickets priority`,
+    });
+
+    // Only clear selection for tickets that no longer match the current filter
+    if (priorityFilter && priorityFilter !== newPriority) {
+      setSelectedTickets(prev => {
+        const newSelection = new Set(prev);
+        Array.from(prev).forEach(id => newSelection.delete(id));
+        return newSelection;
+      });
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["tickets"] });
   };
 
   const handleBulkAssign = async (assigneeId: string) => {
@@ -268,13 +293,24 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
         title: "Error",
         description: "Failed to assign tickets",
       });
-    } else {
-      toast({
-        title: "Success",
-        description: `Assigned ${selectedTickets.size} tickets`,
-      });
-      setSelectedTickets(new Set());
+      return;
     }
+
+    toast({
+      title: "Success",
+      description: `Assigned ${selectedTickets.size} tickets`,
+    });
+
+    // Only clear selection for tickets that no longer match the current filter
+    if (assigneeFilter && assigneeFilter !== assigneeId) {
+      setSelectedTickets(prev => {
+        const newSelection = new Set(prev);
+        Array.from(prev).forEach(id => newSelection.delete(id));
+        return newSelection;
+      });
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["tickets"] });
   };
 
   const getStatusBadgeColor = (status: string | null) => {
