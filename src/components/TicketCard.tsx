@@ -194,6 +194,7 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
         ticket={ticket}
         open={showEditDialog}
         onOpenChange={setShowEditDialog}
+        isAdmin={isAdmin}
       />
       
       <TicketResponseDialog

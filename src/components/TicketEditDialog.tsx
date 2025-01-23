@@ -8,6 +8,7 @@ import { Tables } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 type Ticket = Tables<"tickets">;
 type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
@@ -16,32 +17,47 @@ interface TicketEditDialogProps {
   ticket: Ticket;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isAdmin?: boolean;
 }
 
-export const TicketEditDialog = ({ ticket, open, onOpenChange }: TicketEditDialogProps) => {
-  const [title, setTitle] = useState(ticket.title);
-  const [description, setDescription] = useState(ticket.description);
-  const [status, setStatus] = useState<TicketStatus>(ticket.status as TicketStatus || 'open');
-  const [priority, setPriority] = useState<string>(ticket.priority?.toString() || "1");
+export const TicketEditDialog = ({ ticket, open, onOpenChange, isAdmin }: TicketEditDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [title, setTitle] = useState(ticket.title);
+  const [description, setDescription] = useState(ticket.description);
+  const [status, setStatus] = useState<TicketStatus>(ticket.status as TicketStatus);
+  const [assignedTo, setAssignedTo] = useState<string | null>(ticket.assigned_to);
+
+  // Fetch workers for assignee selection (admin only)
+  const { data: workers = [] } = useQuery({
+    queryKey: ["workers"],
+    queryFn: async () => {
+      if (!isAdmin) return [];
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .in("role", ["worker", "admin"]);
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin,
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const { error } = await supabase
       .from("tickets")
       .update({
         title,
         description,
         status,
-        priority: parseInt(priority),
+        assigned_to: assignedTo,
         updated_at: new Date().toISOString(),
       })
       .eq("id", ticket.id);
 
     if (error) {
-      console.error("Error updating ticket:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -54,9 +70,13 @@ export const TicketEditDialog = ({ ticket, open, onOpenChange }: TicketEditDialo
       title: "Success",
       description: "Ticket updated successfully",
     });
-
+    
     queryClient.invalidateQueries({ queryKey: ["tickets"] });
     onOpenChange(false);
+  };
+
+  const handleAssigneeChange = (value: string) => {
+    setAssignedTo(value === "unassigned" ? null : value);
   };
 
   return (
@@ -98,25 +118,30 @@ export const TicketEditDialog = ({ ticket, open, onOpenChange }: TicketEditDialo
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <label htmlFor="priority" className="text-sm font-medium">Priority</label>
-            <Select value={priority} onValueChange={setPriority}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Low</SelectItem>
-                <SelectItem value="2">Medium</SelectItem>
-                <SelectItem value="3">High</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit">Save Changes</Button>
-          </div>
+
+          {isAdmin && (
+            <div className="space-y-2">
+              <label htmlFor="assignee" className="text-sm font-medium">Assign To</label>
+              <Select 
+                value={assignedTo || "unassigned"} 
+                onValueChange={handleAssigneeChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select assignee" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {workers.map((worker) => (
+                    <SelectItem key={worker.id} value={worker.id}>
+                      {worker.full_name || worker.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <Button type="submit">Save changes</Button>
         </form>
       </DialogContent>
     </Dialog>
