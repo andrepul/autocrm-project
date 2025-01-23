@@ -7,18 +7,16 @@ import { Tables } from "@/integrations/supabase/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { CreateTicketDialog } from "@/components/CreateTicketDialog";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { UserRoleManagement } from "@/components/UserRoleManagement";
-import { TicketCard } from "@/components/TicketCard";
+import { QueueManagement } from "@/components/QueueManagement";
 
 type Profile = Tables<"profiles">;
-type Ticket = Tables<"tickets">;
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const queryClient = useQueryClient();
 
   // Fetch user profile
   const { data: profileData, error: profileError } = useQuery({
@@ -61,62 +59,6 @@ const Dashboard = () => {
     }
   }, [profileData, profileError, navigate, toast]);
 
-  // Add real-time subscription for tickets and responses
-  useEffect(() => {
-    const channel = supabase
-      .channel('public:tickets')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tickets'
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['tickets'] });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'ticket_responses'
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['tickets'] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
-
-  const { data: tickets, isLoading } = useQuery({
-    queryKey: ["tickets"],
-    queryFn: async () => {
-      console.log("Fetching tickets...");
-      const { data, error } = await supabase
-        .from("tickets")
-        .select(`
-          *,
-          ticket_tags (
-            tags (
-              id,
-              name
-            )
-          )
-        `)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!profile,
-  });
-
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -134,13 +76,16 @@ const Dashboard = () => {
     }
   };
 
-  if (isLoading || !profile) {
+  if (!profile) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>
     );
   }
+
+  const isAdmin = profile.role === "admin";
+  const isWorkerOrAdmin = profile.role === "worker" || isAdmin;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -169,20 +114,22 @@ const Dashboard = () => {
           <Tabs defaultValue="tickets" className="w-full">
             <TabsList>
               <TabsTrigger value="tickets">Tickets</TabsTrigger>
-              {profile?.role === "admin" && (
+              {isAdmin && (
                 <TabsTrigger value="users">User Management</TabsTrigger>
               )}
             </TabsList>
 
             <TabsContent value="tickets">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {tickets?.map((ticket) => (
-                  <TicketCard key={ticket.id} ticket={ticket} />
-                ))}
-              </div>
+              {isWorkerOrAdmin ? (
+                <QueueManagement isAdmin={isAdmin} />
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {/* Customer view - implement later */}
+                </div>
+              )}
             </TabsContent>
 
-            {profile?.role === "admin" && (
+            {isAdmin && (
               <TabsContent value="users">
                 <UserRoleManagement />
               </TabsContent>
