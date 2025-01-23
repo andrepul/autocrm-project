@@ -362,21 +362,21 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-4 items-center bg-white p-4 rounded-lg shadow">
+      <div className="flex flex-wrap gap-3 items-center bg-white p-2.5 rounded-lg shadow">
         <div className={cn(
           "flex items-center gap-2",
           isMobile ? "w-full" : "flex-none"
         )}>
-          <Filter className="h-4 w-4" />
-          <span className="font-medium">Filters:</span>
+          <Filter className="h-3.5 w-3.5" />
+          <span className="font-medium text-xs">Filters:</span>
         </div>
         
         <div className={cn(
-          "flex flex-wrap gap-4",
+          "flex flex-wrap gap-2",
           isMobile ? "w-full" : "flex-1"
         )}>
           <Select value={statusFilter ?? "all"} onValueChange={(value) => setStatusFilter(value === "all" ? null : value as TicketStatus)}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="h-7 w-[120px] text-xs">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -389,7 +389,7 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
           </Select>
 
           <Select value={priorityFilter ?? "all"} onValueChange={(value) => setPriorityFilter(value === "all" ? null : value)}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="h-7 w-[120px] text-xs">
               <SelectValue placeholder="Priority" />
             </SelectTrigger>
             <SelectContent>
@@ -401,7 +401,7 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
           </Select>
 
           <Select value={tagFilter ?? "all"} onValueChange={(value) => setTagFilter(value === "all" ? null : value)}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="h-7 w-[120px] text-xs">
               <SelectValue placeholder="Tag" />
             </SelectTrigger>
             <SelectContent>
@@ -416,7 +416,7 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
 
           {isAdmin && (
             <Select value={assigneeFilter ?? "all"} onValueChange={(value) => setAssigneeFilter(value === "all" ? null : value)}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="h-7 w-[160px] text-xs">
                 <SelectValue placeholder="Assignee" />
               </SelectTrigger>
               <SelectContent>
@@ -436,24 +436,24 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
             variant="ghost"
             size="sm"
             className={cn(
-              "h-8 px-3 rounded-none",
+              "h-7 px-2 rounded-none",
               viewMode === 'grid' ? "bg-accent text-accent-foreground" : "hover:bg-transparent hover:text-accent-foreground"
             )}
             onClick={() => setViewMode('grid')}
           >
-            <LayoutGrid className="h-4 w-4" />
+            <LayoutGrid className="h-3.5 w-3.5" />
           </Button>
-          <div className="w-[1px] h-4 bg-border" />
+          <div className="w-[1px] h-3.5 bg-border" />
           <Button
             variant="ghost"
             size="sm"
             className={cn(
-              "h-8 px-3 rounded-none",
+              "h-7 px-2 rounded-none",
               viewMode === 'list' ? "bg-accent text-accent-foreground" : "hover:bg-transparent hover:text-accent-foreground"
             )}
             onClick={() => setViewMode('list')}
           >
-            <LayoutList className="h-4 w-4" />
+            <LayoutList className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
