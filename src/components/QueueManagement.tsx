@@ -42,7 +42,6 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
   const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
 
-  // Fetch tickets with their tags and assignee information
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["tickets", statusFilter, priorityFilter, assigneeFilter, tagFilter],
     queryFn: async () => {
@@ -214,12 +213,12 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
           <span className="font-medium">Filters:</span>
         </div>
         
-        <Select value={statusFilter ?? ""} onValueChange={(value) => setStatusFilter(value as TicketStatus | null)}>
+        <Select value={statusFilter ?? "all"} onValueChange={(value) => setStatusFilter(value === "all" ? null : value as TicketStatus)}>
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Status</SelectItem>
+            <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="open">Open</SelectItem>
             <SelectItem value="in_progress">In Progress</SelectItem>
             <SelectItem value="resolved">Resolved</SelectItem>
@@ -227,24 +226,24 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
           </SelectContent>
         </Select>
 
-        <Select value={priorityFilter ?? ""} onValueChange={setPriorityFilter}>
+        <Select value={priorityFilter ?? "all"} onValueChange={(value) => setPriorityFilter(value === "all" ? null : value)}>
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Priorities</SelectItem>
+            <SelectItem value="all">All Priorities</SelectItem>
             <SelectItem value="1">Low</SelectItem>
             <SelectItem value="2">Medium</SelectItem>
             <SelectItem value="3">High</SelectItem>
           </SelectContent>
         </Select>
 
-        <Select value={tagFilter ?? ""} onValueChange={setTagFilter}>
+        <Select value={tagFilter ?? "all"} onValueChange={(value) => setTagFilter(value === "all" ? null : value)}>
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="Tag" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Tags</SelectItem>
+            <SelectItem value="all">All Tags</SelectItem>
             {tags.map((tag) => (
               <SelectItem key={tag.id} value={tag.id}>
                 {tag.name}
@@ -254,12 +253,12 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
         </Select>
 
         {isAdmin && (
-          <Select value={assigneeFilter ?? ""} onValueChange={setAssigneeFilter}>
+          <Select value={assigneeFilter ?? "all"} onValueChange={(value) => setAssigneeFilter(value === "all" ? null : value)}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Assignee" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Assignees</SelectItem>
+              <SelectItem value="all">All Assignees</SelectItem>
               {workers.map((worker) => (
                 <SelectItem key={worker.id} value={worker.id}>
                   {worker.full_name || worker.email}
