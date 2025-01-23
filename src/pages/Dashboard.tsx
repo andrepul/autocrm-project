@@ -100,15 +100,19 @@ const Dashboard = () => {
       console.log("Fetching tickets...");
       const { data, error } = await supabase
         .from("tickets")
-        .select("*")
+        .select(`
+          *,
+          ticket_tags (
+            tags (
+              id,
+              name
+            )
+          )
+        `)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error fetching tickets:", error);
-        throw error;
-      }
-      console.log("Fetched tickets:", data);
-      return data as Ticket[];
+      if (error) throw error;
+      return data;
     },
     enabled: !!profile,
   });

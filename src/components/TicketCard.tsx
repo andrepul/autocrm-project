@@ -147,16 +147,27 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
             </div>
           </div>
           {isWorkerOrAdmin && (
-            <div className="mt-2 flex justify-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-xs"
-                onClick={() => setShowTagsDialog(true)}
-              >
-                <Tag className="h-3 w-3 mr-1" />
-                Manage Tags
-              </Button>
+            <div className="mt-2">
+              <div className="flex flex-wrap gap-2 items-center">
+                {ticket.ticket_tags?.map(({ tags }) => (
+                  <Badge
+                    key={tags.id}
+                    variant="secondary"
+                    className="px-2 py-1 text-xs"
+                  >
+                    {tags.name}
+                  </Badge>
+                ))}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 text-xs ml-auto"
+                  onClick={() => setShowTagsDialog(true)}
+                >
+                  <Tag className="h-3 w-3 mr-1" />
+                  Manage Tags
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
