@@ -22,6 +22,7 @@ import {
   LayoutList,
   MessageSquare,
   Edit2,
+  X,
 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { TicketCard } from "./TicketCard";
@@ -317,6 +318,45 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
     }
   };
 
+  const clearAllFilters = () => {
+    setStatusFilter(null);
+    setPriorityFilter(null);
+    setAssigneeFilter(null);
+    setTagFilter(null);
+  };
+
+  const hasActiveFilters = statusFilter || priorityFilter || assigneeFilter || tagFilter;
+
+  const renderClearFiltersButton = () => {
+    if (!hasActiveFilters) return null;
+
+    if (isMobile) {
+      return (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={clearAllFilters}
+          className="w-full h-9 mt-2 text-muted-foreground hover:text-foreground"
+        >
+          <X className="h-3.5 w-3.5 mr-1.5" />
+          Clear All Filters
+        </Button>
+      );
+    }
+
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={clearAllFilters}
+        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+      >
+        <X className="h-3.5 w-3.5 mr-1" />
+        Clear All
+      </Button>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -398,8 +438,8 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
         </div>
         
         <div className={cn(
-          "flex flex-wrap gap-2",
-          isMobile ? "w-full" : "flex-1"
+          "flex flex-wrap gap-2 items-center",
+          isMobile ? "w-full flex-col" : "flex-1"
         )}>
           <Select value={statusFilter ?? "all"} onValueChange={(value) => setStatusFilter(value === "all" ? null : value as TicketStatus)}>
             <SelectTrigger className="h-7 w-[120px] text-xs">
@@ -457,9 +497,14 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
               </SelectContent>
             </Select>
           )}
+
+          {!isMobile && renderClearFiltersButton()}
         </div>
 
-        <div className="flex items-center gap-2 ml-auto">
+        <div className={cn(
+          "flex items-center gap-2",
+          isMobile ? "w-full" : "ml-auto"
+        )}>
           <Select 
             value={`${sortField}-${sortDirection}`} 
             onValueChange={(value) => {
@@ -509,6 +554,8 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
             </Button>
           </div>
         </div>
+
+        {isMobile && renderClearFiltersButton()}
       </div>
 
       {tickets.length > 0 && (
