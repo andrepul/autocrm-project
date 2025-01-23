@@ -46,6 +46,8 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
     queryKey: ["tickets", statusFilter, priorityFilter, assigneeFilter, tagFilter],
     queryFn: async () => {
       console.log("Fetching filtered tickets...");
+      console.log("Tag filter:", tagFilter);
+      
       let query = supabase
         .from("tickets")
         .select(`
@@ -61,8 +63,7 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
             full_name,
             email
           )
-        `)
-        .order("created_at", { ascending: false });
+        `);
 
       if (statusFilter) {
         query = query.eq("status", statusFilter);
@@ -74,11 +75,18 @@ export const QueueManagement = ({ isAdmin }: QueueManagementProps) => {
         query = query.eq("assigned_to", assigneeFilter);
       }
       if (tagFilter) {
-        query = query.contains("ticket_tags", [{ tags: { id: tagFilter } }]);
+        // Join with ticket_tags to filter by tag_id
+        query = query.eq('ticket_tags.tag_id', tagFilter);
       }
 
       const { data, error } = await query;
-      if (error) throw error;
+      
+      if (error) {
+        console.error("Error fetching tickets:", error);
+        throw error;
+      }
+      
+      console.log("Fetched tickets:", data);
       return data as Ticket[];
     },
   });
