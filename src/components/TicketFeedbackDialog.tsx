@@ -21,14 +21,14 @@ export const TicketFeedbackDialog = ({
   onOpenChange,
   onFeedbackSubmitted
 }: TicketFeedbackDialogProps) => {
-  const [rating, setRating] = useState<number>(0);
+  const [rating, setRating] = useState<"1" | "2" | "3" | "4" | "5" | null>(null);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [feedback, setFeedback] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async () => {
-    if (rating === 0) {
+    if (!rating) {
       toast({
         variant: "destructive",
         title: "Rating required",
@@ -43,7 +43,7 @@ export const TicketFeedbackDialog = ({
         .from("ticket_feedback")
         .insert({
           ticket_id: ticketId,
-          rating: rating.toString(),
+          rating,
           feedback_text: feedback
         });
 
@@ -92,11 +92,11 @@ export const TicketFeedbackDialog = ({
                 className="focus:outline-none"
                 onMouseEnter={() => setHoverRating(star)}
                 onMouseLeave={() => setHoverRating(0)}
-                onClick={() => setRating(star)}
+                onClick={() => setRating(star.toString() as "1" | "2" | "3" | "4" | "5")}
               >
                 <Star
                   className={`w-8 h-8 ${
-                    star <= (hoverRating || rating)
+                    star <= (hoverRating || (rating ? parseInt(rating) : 0))
                       ? "fill-yellow-400 text-yellow-400"
                       : "text-gray-300"
                   }`}
