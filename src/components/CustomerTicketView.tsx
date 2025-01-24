@@ -10,6 +10,8 @@ export const CustomerTicketView = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
+      console.log("Fetching tickets for user:", user.id);
+
       const { data, error } = await supabase
         .from("tickets")
         .select(`
@@ -34,12 +36,17 @@ export const CustomerTicketView = () => {
         .eq("customer_id", user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching tickets:", error);
+        throw error;
+      }
+      
+      console.log("Fetched tickets:", data);
       
       // Transform the data to ensure ticket_feedback is always an array
       return data.map(ticket => ({
         ...ticket,
-        ticket_feedback: ticket.ticket_feedback ? [ticket.ticket_feedback] : []
+        ticket_feedback: ticket.ticket_feedback || []
       }));
     },
   });
