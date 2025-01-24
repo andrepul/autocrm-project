@@ -10,6 +10,7 @@ import { CreateTicketDialog } from "@/components/CreateTicketDialog";
 import { useQuery } from "@tanstack/react-query";
 import UserRoleManagement from "@/components/UserRoleManagement";
 import { QueueManagement } from "@/components/QueueManagement";
+import { CustomerTicketView } from "@/components/CustomerTicketView";
 
 type Profile = Tables<"profiles">;
 
@@ -123,9 +124,7 @@ const Dashboard = () => {
               {isWorkerOrAdmin ? (
                 <QueueManagement isAdmin={isAdmin} />
               ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {/* Customer view - implement later */}
-                </div>
+                <CustomerTicketView />
               )}
             </TabsContent>
 

@@ -48,12 +48,21 @@ export function CreateTicketDialog() {
 
   const onSubmit = async (values: z.infer<typeof ticketSchema>) => {
     try {
-      const { error } = await supabase.from("tickets").insert({
-        title: values.title,
-        description: values.description,
-        priority: values.priority,
-        customer_id: (await supabase.auth.getUser()).data.user?.id,
-      });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      const { error } = await supabase
+        .from("tickets")
+        .insert({
+          title: values.title,
+          description: values.description,
+          status: "open",
+          priority: values.priority,
+          customer_id: user.id,
+          assigned_to: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
 
       if (error) throw error;
 
@@ -62,7 +71,7 @@ export function CreateTicketDialog() {
         description: "Ticket created successfully",
       });
 
-      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      queryClient.invalidateQueries({ queryKey: ["tickets", "customerTickets"] });
       form.reset();
       setOpen(false);
     } catch (error) {

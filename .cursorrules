@@ -79,7 +79,9 @@ API Features:
 - Webhooks: Support event-driven architectures.
 - Granular Permissions: Ensure secure integrations using API key authentication.
 
-# Database Schema as of 2025-01-23 11:30 GMT-3
+# Database Schema as of 2025-01-23 23:30 GMT-3
+
+# Database Schema
 
 ## tickets
 | Column Name  | Data Type     | Description                      |
@@ -108,6 +110,72 @@ API Features:
 
 ---
 
+## ticket_feedback
+| Column Name   | Data Type     | Description                      |
+|---------------|---------------|----------------------------------|
+| id            | uuid          | Primary key                     |
+| ticket_id     | uuid          | Reference to the ticket         |
+| rating        | ticket_rating | Rating given for the ticket     |
+| feedback_text | text          | Feedback provided by the user   |
+| created_at    | timestamptz   | Timestamp of creation           |
+| updated_at    | timestamptz   | Timestamp of last update        |
+
+---
+
+## ticket_custom_fields
+| Column Name   | Data Type   | Description                      |
+|---------------|-------------|----------------------------------|
+| id            | uuid        | Primary key                     |
+| ticket_id     | uuid        | Reference to the ticket         |
+| field_id      | uuid        | Reference to the custom field   |
+| value         | text        | Value of the custom field       |
+| created_at    | timestamptz | Timestamp of creation           |
+| updated_at    | timestamptz | Timestamp of last update        |
+
+---
+
+## custom_fields
+| Column Name   | Data Type         | Description                      |
+|---------------|-------------------|----------------------------------|
+| id            | uuid              | Primary key                     |
+| name          | text              | Name of the custom field        |
+| field_type    | custom_field_type | Type of the custom field        |
+| created_at    | timestamptz       | Timestamp of creation           |
+| updated_at    | timestamptz       | Timestamp of last update        |
+
+---
+
+## ticket_tags
+| Column Name   | Data Type   | Description                      |
+|---------------|-------------|----------------------------------|
+| ticket_id     | uuid        | Reference to the ticket         |
+| tag_id        | uuid        | Reference to the tag            |
+| created_at    | timestamptz | Timestamp of creation           |
+
+---
+
+## tags
+| Column Name   | Data Type   | Description                      |
+|---------------|-------------|----------------------------------|
+| id            | uuid        | Primary key                     |
+| name          | text        | Name of the tag                 |
+| created_at    | timestamptz | Timestamp of creation           |
+| updated_at    | timestamptz | Timestamp of last update        |
+
+---
+
+## ticket_internal_notes
+| Column Name   | Data Type   | Description                      |
+|---------------|-------------|----------------------------------|
+| id            | uuid        | Primary key                     |
+| ticket_id     | uuid        | Reference to the ticket         |
+| author_id     | uuid        | Reference to the note author    |
+| content       | text        | Content of the internal note    |
+| created_at    | timestamptz | Timestamp of creation           |
+| updated_at    | timestamptz | Timestamp of last update        |
+
+---
+
 ## profiles
 | Column Name   | Data Type   | Description                      |
 |---------------|-------------|----------------------------------|
@@ -126,6 +194,7 @@ API Features:
 | id            | uuid        | Primary key                     |
 
 ---
+
 
 
 # CleanCode
