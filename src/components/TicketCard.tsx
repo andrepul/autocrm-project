@@ -100,10 +100,13 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
             <div>
               <CardTitle className="text-lg">{ticket.title}</CardTitle>
               <div className="flex gap-2 mt-2">
-                <Badge className={getStatusBadgeColor(ticket.status)}>
+                <Badge className={`rounded-none ${getStatusBadgeColor(ticket.status)}`}>
                   {ticket.status}
                 </Badge>
-                <Badge className={getPriorityBadgeColor(ticket.priority)}>
+                <Badge 
+                  className={`rounded-full ${getPriorityBadgeColor(ticket.priority)}`}
+                  variant="outline"
+                >
                   {getPriorityLabel(ticket.priority)}
                 </Badge>
               </div>
