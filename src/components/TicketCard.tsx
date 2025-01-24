@@ -2,13 +2,14 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit2, MessageSquare, StickyNote, Tag, Settings, Clock, RefreshCw } from "lucide-react";
+import { Edit2, MessageSquare, StickyNote, Tag, Settings, Clock, RefreshCw, Star } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { TicketEditDialog } from "./TicketEditDialog";
 import { TicketResponseDialog } from "./TicketResponseDialog";
 import { TicketInternalNotesDialog } from "./TicketInternalNotesDialog";
 import { TicketCustomFieldsDialog } from "./TicketCustomFieldsDialog";
 import { TicketTagsDialog } from "./TicketTagsDialog";
+import { TicketFeedbackDialog } from "./TicketFeedbackDialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from 'date-fns';
@@ -17,6 +18,7 @@ type Ticket = Tables<"tickets"> & {
   ticket_tags?: {
     tags: Tables<"tags">;
   }[];
+  ticket_feedback?: Tables<"ticket_feedback">[];
 };
 
 interface TicketCardProps {
@@ -29,6 +31,7 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
   const [showInternalNotesDialog, setShowInternalNotesDialog] = useState(false);
   const [showCustomFieldsDialog, setShowCustomFieldsDialog] = useState(false);
   const [showTagsDialog, setShowTagsDialog] = useState(false);
+  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
 
   // Fetch user profile to determine role
   const { data: profile } = useQuery({
@@ -50,6 +53,11 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
 
   const isWorkerOrAdmin = profile?.role === "worker" || profile?.role === "admin";
   const isAdmin = profile?.role === "admin";
+  const isCustomer = profile?.role === "customer";
+  const needsFeedback = isCustomer && 
+    (ticket.status === "resolved" || ticket.status === "closed") && 
+    (!ticket.ticket_feedback || ticket.ticket_feedback.length === 0) &&
+    ticket.customer_id === profile.id;
 
   const getStatusBadgeColor = (status: string | null) => {
     switch (status) {
@@ -114,7 +122,24 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
           </div>
         </CardHeader>
         <CardContent>
+          {needsFeedback && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+              <p className="text-sm text-yellow-800 mb-2">
+                This ticket has been marked as {ticket.status}. How was your experience?
+              </p>
+              <Button
+                size="sm"
+                onClick={() => setShowFeedbackDialog(true)}
+                className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+              >
+                <Star className="w-4 h-4 mr-2" />
+                Rate Your Experience
+              </Button>
+            </div>
+          )}
+
           <p className="text-sm text-gray-500 line-clamp-2">{ticket.description}</p>
+          
           <div className="mt-2 flex flex-col gap-1 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
@@ -228,6 +253,15 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
             isAdmin={isAdmin}
           />
         </>
+      )}
+
+      {needsFeedback && (
+        <TicketFeedbackDialog
+          ticketId={ticket.id}
+          ticketTitle={ticket.title}
+          open={showFeedbackDialog}
+          onOpenChange={setShowFeedbackDialog}
+        />
       )}
     </>
   );

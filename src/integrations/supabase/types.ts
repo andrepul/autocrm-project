@@ -54,7 +54,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           full_name?: string | null
-          id?: string
+          id: string
           role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string
         }
@@ -251,6 +251,7 @@ export type Database = {
           status: Database["public"]["Enums"]["ticket_status"] | null
           title: string
           updated_at: string
+          ticket_feedback?: Tables<"ticket_feedback">[];
         }
         Insert: {
           assigned_to?: string | null
@@ -289,6 +290,41 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      ticket_feedback: {
+        Row: {
+          id: string
+          ticket_id: string
+          rating: "1" | "2" | "3" | "4" | "5"
+          feedback_text: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          ticket_id: string
+          rating: "1" | "2" | "3" | "4" | "5"
+          feedback_text?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          ticket_id?: string
+          rating?: "1" | "2" | "3" | "4" | "5"
+          feedback_text?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_feedback_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          }
         ]
       }
     }
@@ -330,10 +366,10 @@ export type Tables<
         PublicSchema["Views"])
     ? (PublicSchema["Tables"] &
         PublicSchema["Views"])[PublicTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
+      Row: infer R
+    }
+    ? R
+    : never
     : never
 
 export type TablesInsert<
