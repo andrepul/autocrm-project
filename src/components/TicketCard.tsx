@@ -59,6 +59,9 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
     (!ticket.ticket_feedback || ticket.ticket_feedback.length === 0) &&
     ticket.customer_id === profile.id;
 
+  const hasFeedback = ticket.ticket_feedback && ticket.ticket_feedback.length > 0;
+  const feedback = hasFeedback ? ticket.ticket_feedback[0] : null;
+
   const getStatusBadgeColor = (status: string | null) => {
     switch (status) {
       case "open":
@@ -100,6 +103,22 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
     }
   };
 
+  const renderStars = (rating: string) => {
+    const numRating = parseInt(rating);
+    return (
+      <div className="flex gap-0.5">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            className={`w-4 h-4 ${
+              star <= numRating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+            }`}
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <>
       <Card>
@@ -138,6 +157,20 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
             </div>
           )}
 
+          {hasFeedback && feedback && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-800 font-medium mb-1">
+                Thank you for your feedback!
+              </p>
+              {renderStars(feedback.rating)}
+              {feedback.feedback_text && (
+                <p className="text-sm text-blue-700 mt-2 line-clamp-2">
+                  {feedback.feedback_text}
+                </p>
+              )}
+            </div>
+          )}
+
           <p className="text-sm text-gray-500 line-clamp-2">{ticket.description}</p>
           
           <div className="mt-2 flex flex-col gap-1 text-sm text-muted-foreground">
@@ -152,6 +185,7 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
               </div>
             )}
           </div>
+
           <div className="mt-4 flex justify-between items-center">
             <span className="text-xs text-gray-400">
               {new Date(ticket.created_at).toLocaleDateString()}
