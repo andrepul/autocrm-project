@@ -35,7 +35,12 @@ export const CustomerTicketView = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data;
+      
+      // Transform the data to ensure ticket_feedback is always an array
+      return data.map(ticket => ({
+        ...ticket,
+        ticket_feedback: ticket.ticket_feedback ? [ticket.ticket_feedback] : []
+      }));
     },
   });
 
