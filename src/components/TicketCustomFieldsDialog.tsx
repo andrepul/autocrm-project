@@ -7,6 +7,8 @@ import { Tables } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { Trash2, Edit } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type Ticket = Tables<"tickets">;
 type CustomField = Tables<"custom_fields">;
@@ -33,6 +35,8 @@ export const TicketCustomFieldsDialog = ({
   const [customFields, setCustomFields] = useState<CustomFieldWithValue[]>([]);
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldType, setNewFieldType] = useState<"text" | "number" | "date" | "boolean">("text");
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -43,7 +47,7 @@ export const TicketCustomFieldsDialog = ({
   }, [open]);
 
   const loadCustomFields = async () => {
-    // Load custom fields definitions
+    console.log("Loading custom fields...");
     const { data: fields, error: fieldsError } = await supabase
       .from("custom_fields")
       .select("*")
@@ -54,7 +58,6 @@ export const TicketCustomFieldsDialog = ({
       return;
     }
 
-    // Load custom field values for this ticket
     const { data: values, error: valuesError } = await supabase
       .from("ticket_custom_fields")
       .select("*")
@@ -65,13 +68,13 @@ export const TicketCustomFieldsDialog = ({
       return;
     }
 
-    // Combine fields with their values
     const fieldsWithValues = fields.map(field => ({
       ...field,
       value: values?.find(v => v.field_id === field.id)?.value,
       valueId: values?.find(v => v.field_id === field.id)?.id
     }));
 
+    console.log("Loaded fields with values:", fieldsWithValues);
     setCustomFields(fieldsWithValues);
   };
 
@@ -104,9 +107,66 @@ export const TicketCustomFieldsDialog = ({
     loadCustomFields();
   };
 
+  const handleDeleteField = async (fieldId: string) => {
+    const { error } = await supabase
+      .from("custom_fields")
+      .delete()
+      .eq("id", fieldId);
+
+    if (error) {
+      console.error("Error deleting custom field:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete custom field",
+      });
+      return;
+    }
+
+    toast({
+      title: "Success",
+      description: "Custom field deleted successfully",
+    });
+
+    loadCustomFields();
+    queryClient.invalidateQueries({ queryKey: ["tickets"] });
+  };
+
+  const handleStartEdit = (field: CustomFieldWithValue) => {
+    setEditingField(field.id);
+    setEditingName(field.name);
+  };
+
+  const handleSaveEdit = async (fieldId: string) => {
+    if (!editingName.trim()) return;
+
+    const { error } = await supabase
+      .from("custom_fields")
+      .update({ name: editingName.trim() })
+      .eq("id", fieldId);
+
+    if (error) {
+      console.error("Error updating custom field:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update custom field",
+      });
+      return;
+    }
+
+    toast({
+      title: "Success",
+      description: "Custom field updated successfully",
+    });
+
+    setEditingField(null);
+    loadCustomFields();
+    queryClient.invalidateQueries({ queryKey: ["tickets"] });
+  };
+
   const handleUpdateFieldValue = async (field: CustomFieldWithValue, value: string) => {
     if (field.valueId) {
-      // Update existing value
       const { error } = await supabase
         .from("ticket_custom_fields")
         .update({ value })
@@ -122,7 +182,6 @@ export const TicketCustomFieldsDialog = ({
         return;
       }
     } else {
-      // Create new value
       const { error } = await supabase
         .from("ticket_custom_fields")
         .insert({
@@ -181,7 +240,61 @@ export const TicketCustomFieldsDialog = ({
             <h3 className="text-sm font-medium">Field Values</h3>
             {customFields.map((field) => (
               <div key={field.id} className="space-y-2">
-                <label className="text-sm font-medium">{field.name}</label>
+                <div className="flex items-center gap-2">
+                  {editingField === field.id ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <Input
+                        value={editingName}
+                        onChange={(e) => setEditingName(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button size="sm" onClick={() => handleSaveEdit(field.id)}>Save</Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditingField(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <label className="text-sm font-medium flex-1">{field.name}</label>
+                      {isAdmin && (
+                        <div className="flex items-center gap-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleStartEdit(field)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Attention: This change will be reflected to all workers and customers</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteField(field.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Warning: this will remove the custom field. This action cannot be undone.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
                 {field.field_type === "boolean" ? (
                   <Select
                     value={field.value || "false"}
