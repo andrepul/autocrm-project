@@ -17,8 +17,18 @@ export const CustomerTicketView = () => {
           ticket_tags (
             tags (
               id,
-              name
+              name,
+              created_at,
+              updated_at
             )
+          ),
+          ticket_feedback (
+            id,
+            rating,
+            feedback_text,
+            created_at,
+            updated_at,
+            ticket_id
           )
         `)
         .eq("customer_id", user.id)
@@ -53,4 +63,4 @@ export const CustomerTicketView = () => {
       ))}
     </div>
   );
-}; 
+};
