@@ -71,7 +71,15 @@ export function CreateTicketDialog() {
         description: "Ticket created successfully",
       });
 
-      queryClient.invalidateQueries({ queryKey: ["tickets", "customerTickets"] });
+      // Invalidate all ticket-related queries
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0];
+          return queryKey === "tickets" || 
+                 queryKey === "customerTickets";
+        }
+      });
+      
       form.reset();
       setOpen(false);
     } catch (error) {
