@@ -1,14 +1,12 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tables } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Trash2, Edit } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CustomFieldForm } from "./custom-fields/CustomFieldForm";
+import { CustomFieldHeader } from "./custom-fields/CustomFieldHeader";
+import { CustomFieldValue } from "./custom-fields/CustomFieldValue";
 
 type Ticket = Tables<"tickets">;
 type CustomField = Tables<"custom_fields">;
@@ -33,8 +31,6 @@ export const TicketCustomFieldsDialog = ({
   isAdmin,
 }: TicketCustomFieldsDialogProps) => {
   const [customFields, setCustomFields] = useState<CustomFieldWithValue[]>([]);
-  const [newFieldName, setNewFieldName] = useState("");
-  const [newFieldType, setNewFieldType] = useState<"text" | "number" | "date" | "boolean">("text");
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const { toast } = useToast();
@@ -78,14 +74,12 @@ export const TicketCustomFieldsDialog = ({
     setCustomFields(fieldsWithValues);
   };
 
-  const handleCreateField = async () => {
-    if (!newFieldName.trim()) return;
-
+  const handleCreateField = async (name: string, fieldType: "text" | "number" | "date" | "boolean") => {
     const { error } = await supabase
       .from("custom_fields")
       .insert({
-        name: newFieldName.trim(),
-        field_type: newFieldType,
+        name: name.trim(),
+        field_type: fieldType,
       });
 
     if (error) {
@@ -103,7 +97,6 @@ export const TicketCustomFieldsDialog = ({
       description: "Custom field created successfully",
     });
 
-    setNewFieldName("");
     loadCustomFields();
   };
 
@@ -213,108 +206,29 @@ export const TicketCustomFieldsDialog = ({
         </DialogHeader>
         <div className="space-y-4">
           {isAdmin && (
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium">Create New Field</h3>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Field name"
-                  value={newFieldName}
-                  onChange={(e) => setNewFieldName(e.target.value)}
-                />
-                <Select value={newFieldType} onValueChange={(value: any) => setNewFieldType(value)}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="text">Text</SelectItem>
-                    <SelectItem value="number">Number</SelectItem>
-                    <SelectItem value="date">Date</SelectItem>
-                    <SelectItem value="boolean">Boolean</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button onClick={handleCreateField}>Create</Button>
-              </div>
-            </div>
+            <CustomFieldForm onSubmit={handleCreateField} />
           )}
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Field Values</h3>
             {customFields.map((field) => (
               <div key={field.id} className="space-y-2">
                 <div className="flex items-center gap-2">
-                  {editingField === field.id ? (
-                    <div className="flex items-center gap-2 flex-1">
-                      <Input
-                        value={editingName}
-                        onChange={(e) => setEditingName(e.target.value)}
-                        className="flex-1"
-                      />
-                      <Button size="sm" onClick={() => handleSaveEdit(field.id)}>Save</Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditingField(null)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      <label className="text-sm font-medium flex-1">{field.name}</label>
-                      {isAdmin && (
-                        <div className="flex items-center gap-2">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleStartEdit(field)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Attention: This change will be reflected to all workers and customers</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDeleteField(field.id)}
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-500" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Warning: this will remove the custom field. This action cannot be undone.</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-                {field.field_type === "boolean" ? (
-                  <Select
-                    value={field.value || "false"}
-                    onValueChange={(value) => handleUpdateFieldValue(field, value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="true">Yes</SelectItem>
-                      <SelectItem value="false">No</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input
-                    type={field.field_type === "number" ? "number" : field.field_type}
-                    value={field.value || ""}
-                    onChange={(e) => handleUpdateFieldValue(field, e.target.value)}
+                  <CustomFieldHeader
+                    field={field}
+                    isAdmin={isAdmin}
+                    isEditing={editingField === field.id}
+                    editingName={editingName}
+                    onStartEdit={() => handleStartEdit(field)}
+                    onSaveEdit={() => handleSaveEdit(field.id)}
+                    onCancelEdit={() => setEditingField(null)}
+                    onDelete={() => handleDeleteField(field.id)}
+                    onEditingNameChange={setEditingName}
                   />
-                )}
+                </div>
+                <CustomFieldValue
+                  field={field}
+                  onValueChange={(value) => handleUpdateFieldValue(field, value)}
+                />
               </div>
             ))}
           </div>
