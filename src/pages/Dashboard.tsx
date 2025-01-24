@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { CreateTicketDialog } from "@/components/CreateTicketDialog";
 import { useQuery } from "@tanstack/react-query";
-import { UserRoleManagement } from "@/components/UserRoleManagement";
+import UserRoleManagement from "@/components/UserRoleManagement";
 import { QueueManagement } from "@/components/QueueManagement";
 
 type Profile = Tables<"profiles">;

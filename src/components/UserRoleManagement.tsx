@@ -6,37 +6,36 @@ import { Button } from "@/components/ui/button";
 
 type Profile = Tables<"profiles">;
 
-const UserRoleManagement = () => {
+export const UserRoleManagement = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      setLoading(true);
-      const { data, error } = await supabase.from("profiles").select("*");
-      if (error) {
-        console.error("Error fetching users:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to fetch users.",
-        });
-      } else {
-        setUsers(data);
-      }
-      setLoading(false);
-    };
+  const fetchUsers = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from("profiles").select("*");
+    if (error) {
+      console.error("Error fetching users:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch users.",
+      });
+    } else {
+      setUsers(data);
+    }
+    setLoading(false);
+  };
 
+  useEffect(() => {
     fetchUsers();
-  }, [toast]);
+  }, []);
 
   const handleRoleChange = async (userId: string, newRole: "customer" | "worker" | "admin") => {
     try {
       const { error } = await supabase
         .from("profiles")
         .update({ 
-          id: userId,  // Add the id field
           role: newRole 
         })
         .eq("id", userId);
