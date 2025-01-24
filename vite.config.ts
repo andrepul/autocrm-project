@@ -13,7 +13,8 @@ export default defineConfig(({ mode }) => ({
       '127.0.0.1',
       // Allow all Lovable domains
       '.lovable.dev',
-      '.lovable.app'
+      '.lovable.app',
+      '.lovableproject.com'
     ],
   },
   plugins: [
