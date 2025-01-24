@@ -46,7 +46,14 @@ export const CustomerTicketView = () => {
       // Transform the data to ensure ticket_feedback is always an array
       return data.map(ticket => ({
         ...ticket,
-        ticket_feedback: ticket.ticket_feedback || []
+        // If ticket_feedback is null/undefined, use empty array
+        // If it's an array, use it as is
+        // If it's an object (single feedback), wrap it in an array
+        ticket_feedback: Array.isArray(ticket.ticket_feedback) 
+          ? ticket.ticket_feedback 
+          : ticket.ticket_feedback 
+            ? [ticket.ticket_feedback] 
+            : []
       }));
     },
   });
